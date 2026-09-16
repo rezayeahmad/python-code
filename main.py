@@ -1,63 +1,87 @@
-class InvalidOperationError(Exception):
-    """Custom exception raised when an unsupported operator is provided."""
+# ==========================================
+# 1. CORE LOGIC / CUSTOM EXCEPTIONS
+# ==========================================
+
+class InvalidGradeError(Exception):
+    """Custom exception raised when a grade is outside the 0-100 range."""
     pass
 
 
-def safe_calculator():
-    print("--- Safe Calculator ---")
+def validate_grade(value):
+    """
+    Validates a grade input.
+    - Safely converts input to numeric form (float).
+    - Accepts only grades from 0 to 100.
+    """
+    # Convert input to numeric form safely
+    try:
+        numeric_grade = float(value)
+    except (ValueError, TypeError):
+        raise ValueError("The grade must be a valid number.")
 
+    # Accept only grades from 0 to 100
+    if numeric_grade < 0 or numeric_grade > 100:
+        raise InvalidGradeError("Grade must be between 0 and 100.")
+
+    return numeric_grade
+
+
+# ==========================================
+# 2. USER INTERFACE (UI) LOGIC & TESTING
+# ==========================================
+
+def run_test_case(test_value, description):
+    """Helper function to run test cases and display user-friendly messages."""
+    print(f"Testing: {description} (Input: '{test_value}')")
+    try:
+        validated_grade = validate_grade(test_value)
+        print(f"  Success: Grade '{validated_grade}' is valid!")
+    except ValueError as e:
+        print(f"  Error: {e}")
+    except InvalidGradeError as e:
+        print(f"  Error: {e}")
+    print("-" * 50)
+
+
+def test_grade_validator():
+    """Tests valid, non-numeric, negative, and >100 values."""
+    print("--- Running Automated Tests ---\n")
+
+    # Test valid value
+    run_test_case("85.5", "Valid grade")
+    run_test_case(90, "Valid grade as integer")
+
+    # Test non-numeric value
+    run_test_case("abc", "Non-numeric grade")
+    run_test_case("", "Empty input")
+
+    # Test negative value
+    run_test_case("-15", "Negative grade")
+
+    # Test >100 value
+    run_test_case("105", "Grade greater than 100")
+
+
+def interactive_menu():
+    """Allows manual user entry with a friendly UI loop."""
+    print("\n--- Student Grade Validator Console ---")
     while True:
+        user_input = input("Enter a student grade to validate (or type 'exit' to quit): ").strip()
+        if user_input.lower() == 'exit':
+            print("Exiting validator. Goodbye!")
+            break
+
         try:
-            # 1. Ask the user for two numeric values
-            num1 = float(input("\nEnter the first number: "))
-            num2 = float(input("Enter the second number: "))
-
-            # 2. Ask for an operation
-            operator = input("Enter an operation (+, -, *, /): ").strip()
-
-            # 5. Raise a custom InvalidOperationError for unsupported operators
-            if operator not in ['+', '-', '*', '/']:
-                raise InvalidOperationError(f"'{operator}' is not a valid operator.")
-
-            # Perform calculation and 4. Handle division by zero
-            if operator == '+':
-                result = num1 + num2
-            elif operator == '-':
-                result = num1 - num2
-            elif operator == '*':
-                result = num1 * num2
-            elif operator == '/':
-                if num2 == 0:
-                    raise ZeroDivisionError("Cannot divide by zero.")
-                result = num1 / num2
-
-            print(f"Result: {num1} {operator} {num2} = {result}")
-
-            # Exit loop if successful
-            break
-
-        except ValueError:
-            # 3. Handle invalid numeric input
-            print("Error: Invalid numeric input. Please enter valid numbers.")
-
-        except InvalidOperationError as e:
-            # Handle the custom operator error
-            print(f"Error: {e}")
-
-        except ZeroDivisionError as e:
-            # Handle division by zero
-            print(f"Error: {e}")
-
-        finally:
-            # 7. Finally block that reports completion of each calculation attempt
-            print("Calculation attempt completed.")
-
-        # 6. Use a loop so the user can retry
-        retry = input("Would you like to try again? (yes/no): ").strip().lower()
-        if retry != 'yes' and retry != 'y':
-            print("Exiting calculator. Goodbye!")
-            break
+            grade = validate_grade(user_input)
+            print(f" Success: Grade {grade} is valid and recorded.")
+        except (ValueError, InvalidGradeError) as error:
+            print(f" Validation Failed: {error}")
+        print()
 
 
 if __name__ == "__main__":
-    safe_calculator()
+    # First run the required test suite cases
+    test_grade_validator()
+
+    # Start the interactive UI
+    interactive_menu()
