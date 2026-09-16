@@ -1,87 +1,46 @@
-# ==========================================
-# 1. CORE LOGIC / CUSTOM EXCEPTIONS
-# ==========================================
-
-class InvalidGradeError(Exception):
-    """Custom exception raised when a grade is outside the 0-100 range."""
+class DocumentReadError(Exception):
+    """Custom exception used to wrap low-level system and decoding errors."""
     pass
 
 
-def validate_grade(value):
+def read_robust_file(filename):
     """
-    Validates a grade input.
-    - Safely converts input to numeric form (float).
-    - Accepts only grades from 0 to 100.
+    Attempts to open and read a file as UTF-8 text safely.
+    Uses custom error wrapping, context managers, and an else block.
     """
-    # Convert input to numeric form safely
     try:
-        numeric_grade = float(value)
-    except (ValueError, TypeError):
-        raise ValueError("The grade must be a valid number.")
+        # Use a context manager to automatically close the file safely
+        with open(filename, mode='r', encoding='utf-8') as file:
+            content = file.read()
 
-    # Accept only grades from 0 to 100
-    if numeric_grade < 0 or numeric_grade > 100:
-        raise InvalidGradeError("Grade must be between 0 and 100.")
+    # Handle low-level exceptions and translate them into DocumentReadError
+    except FileNotFoundError:
+        raise DocumentReadError(f"System Error: The file '{filename}' could not be found.")
 
-    return numeric_grade
+    except PermissionError:
+        raise DocumentReadError(f"System Error: Access denied. Missing permission to read '{filename}'.")
+
+    except UnicodeDecodeError:
+        raise DocumentReadError(f"Format Error: '{filename}' cannot be decoded as clean UTF-8 text.")
+
+    else:
+        # Display file content ONLY on full execution success using else
+        print(f"\n--- File Contents of '{filename}' ---")
+        print(content)
+        print("---------------------------------------")
 
 
-# ==========================================
-# 2. USER INTERFACE (UI) LOGIC & TESTING
-# ==========================================
+def main():
+    print("--- Robust File Reader Console ---")
 
-def run_test_case(test_value, description):
-    """Helper function to run test cases and display user-friendly messages."""
-    print(f"Testing: {description} (Input: '{test_value}')")
+    # Ask for a filename
+    filename = input("Enter the path/name of the file you want to read: ").strip()
+
     try:
-        validated_grade = validate_grade(test_value)
-        print(f"  Success: Grade '{validated_grade}' is valid!")
-    except ValueError as e:
-        print(f"  Error: {e}")
-    except InvalidGradeError as e:
-        print(f"  Error: {e}")
-    print("-" * 50)
-
-
-def test_grade_validator():
-    """Tests valid, non-numeric, negative, and >100 values."""
-    print("--- Running Automated Tests ---\n")
-
-    # Test valid value
-    run_test_case("85.5", "Valid grade")
-    run_test_case(90, "Valid grade as integer")
-
-    # Test non-numeric value
-    run_test_case("abc", "Non-numeric grade")
-    run_test_case("", "Empty input")
-
-    # Test negative value
-    run_test_case("-15", "Negative grade")
-
-    # Test >100 value
-    run_test_case("105", "Grade greater than 100")
-
-
-def interactive_menu():
-    """Allows manual user entry with a friendly UI loop."""
-    print("\n--- Student Grade Validator Console ---")
-    while True:
-        user_input = input("Enter a student grade to validate (or type 'exit' to quit): ").strip()
-        if user_input.lower() == 'exit':
-            print("Exiting validator. Goodbye!")
-            break
-
-        try:
-            grade = validate_grade(user_input)
-            print(f" Success: Grade {grade} is valid and recorded.")
-        except (ValueError, InvalidGradeError) as error:
-            print(f" Validation Failed: {error}")
-        print()
+        read_robust_file(filename)
+    except DocumentReadError as error:
+        print(f"\n[Read Failed] {error}")
 
 
 if __name__ == "__main__":
-    # First run the required test suite cases
-    test_grade_validator()
-
-    # Start the interactive UI
-    interactive_menu()
+    main()
